@@ -4,6 +4,7 @@ const pool = require('./db/dbConnectoin');
 
 const app = express();
 
+const mainRoute = require('./routes/index');
 pool
   .query('SELECT NOW()')
   .then(res => console.log('✅ DB Connected:', res.rows[0]))
