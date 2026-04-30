@@ -1,17 +1,22 @@
-const express = require('express');
 require('dotenv').config();
-const pool = require('./db/dbConnectoin');
+const express = require('express');
+const { Pool } = require('pg');
+const { PrismaPg } = require('@prisma/adapter-pg');
+const { PrismaClient } = require('./generated/prisma');
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 const app = express();
 
-const mainRoute = require('./routes/index');
-pool
-  .query('SELECT NOW()')
-  .then(res => console.log('✅ DB Connected:', res.rows[0]))
-  .catch(err => console.error('❌ Error:', err.message));
-
-app.get('/', (req, res) => {
-  res.send('Hello World!');
+app.get('/', async (req, res) => {
+  try {
+    await prisma.$connect();
+    res.send('DB connected ✅');
+  } catch (err) {
+    res.status(500).send('DB error: ' + err.message);
+  }
 });
 
 app.listen(process.env.PORT || 3000, () => console.log('Server running'));
