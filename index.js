@@ -3,7 +3,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { PrismaClient } = require('./generated/prisma');
-
+const AppError = require('./modules/common/errors/AppError');
 const userRoutes = require('./modules/user/user.routes');
 const authRoutes = require('./modules/auth/auth.routes');
 
@@ -23,6 +23,10 @@ app.use((req, _res, next) => {
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
+app.use((req, res, next) => {
+  next(new AppError(`Route not found: ${req.originalUrl}`, 404));
+});
+
 app.get('/', async (req, res) => {
   try {
     await prisma.$connect();
@@ -32,4 +36,6 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('Server running'));
+app.listen(process.env.PORT || 3000, () =>
+  console.log('Server running Peacfully ✅')
+);
