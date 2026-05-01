@@ -1,68 +1,43 @@
+const asyncHandler = require('express-async-handler');
 const service = require('./user.service');
+const AppError = require('../common/errors/AppError');
 
-exports.createUser = async (req, res) => {
-  try {
-    const user = await service.createUser(req.prisma, req.body);
-    res.status(201).json(user);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
+exports.createUser = asyncHandler(async (req, res, next) => {
+  const user = await service.createUser(req.prisma, req.body);
+  res.status(201).json(user);
+});
 
-exports.getUserById = async (req, res) => {
-  try {
-    const user = await service.getUserById(req.prisma, req.params.id);
-    res.json(user);
-  } catch (err) {
-    res.status(404).json({ message: err.message });
-  }
-};
+exports.getUserById = asyncHandler(async (req, res, next) => {
+  const user = await service.getUserById(req.prisma, req.params.id);
+  if (!user) return next(new AppError('User not found', 404));
+  res.json(user);
+});
 
-exports.getPublicUser = async (req, res) => {
-  try {
-    const user = await service.getPublicUser(req.prisma, req.params.id);
-    res.json(user);
-  } catch (err) {
-    res.status(404).json({ message: err.message });
-  }
-};
+exports.getPublicUser = asyncHandler(async (req, res, next) => {
+  const user = await service.getPublicUser(req.prisma, req.params.id);
+  if (!user) return next(new AppError('User not found', 404));
+  res.json(user);
+});
 
-exports.updateUser = async (req, res) => {
-  try {
-    const user = await service.updateUser(req.prisma, req.params.id, req.body);
-    res.json(user);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
+exports.updateUser = asyncHandler(async (req, res, next) => {
+  const user = await service.updateUser(req.prisma, req.params.id, req.body);
+  if (!user) return next(new AppError('User not found', 404));
+  res.json(user);
+});
 
-exports.deactivateUser = async (req, res) => {
-  try {
-    const user = await service.setActiveStatus(
-      req.prisma,
-      req.params.id,
-      false
-    );
-    res.json(user);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
+exports.deactivateUser = asyncHandler(async (req, res, next) => {
+  const user = await service.setActiveStatus(req.prisma, req.params.id, false);
+  if (!user) return next(new AppError('User not found', 404));
+  res.json(user);
+});
 
-exports.activateUser = async (req, res) => {
-  try {
-    const user = await service.setActiveStatus(req.prisma, req.params.id, true);
-    res.json(user);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
+exports.activateUser = asyncHandler(async (req, res, next) => {
+  const user = await service.setActiveStatus(req.prisma, req.params.id, true);
+  if (!user) return next(new AppError('User not found', 404));
+  res.json(user);
+});
 
-exports.listUsers = async (req, res) => {
-  try {
-    const users = await service.listUsers(req.prisma, req.query);
-    res.json(users);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
+exports.listUsers = asyncHandler(async (req, res, next) => {
+  const users = await service.listUsers(req.prisma, req.query);
+  res.json(users);
+});
