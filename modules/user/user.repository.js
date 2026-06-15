@@ -53,19 +53,26 @@ exports.update = (prisma, id, data) => {
   });
 };
 
-exports.list = (prisma, { page, limit, search }) => {
-  return prisma.user.findMany({
-    skip: (page - 1) * limit,
-    take: limit,
-    where: search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-          ],
-        }
-      : undefined,
-    select: baseSelect,
-    orderBy: { createdAt: 'desc' },
-  });
+exports.list = async (prisma, { page, limit, search }) => {
+  const where = search
+    ? {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+        ],
+      }
+    : undefined;
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      skip: (page - 1) * limit,
+      take: limit,
+      where,
+      select: baseSelect,
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return { users, page, limit, total };
 };

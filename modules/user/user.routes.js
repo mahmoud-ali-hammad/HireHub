@@ -3,8 +3,8 @@ const controller = require('./user.controller');
 
 // Public
 router.get('/', controller.listUsers);
-router.get('/:id', controller.getUserById);
 router.get('/:id/public', controller.getPublicUser);
+router.get('/:id', controller.getUserById);
 
 // Protected (add auth middleware later)
 router.post('/', controller.createUser); // optional admin use

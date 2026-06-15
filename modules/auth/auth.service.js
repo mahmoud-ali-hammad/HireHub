@@ -2,10 +2,12 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const userRepo = require('../user/user.repository');
 const AppError = require('../common/errors/AppError');
+const { validateRegister, validateLogin } = require('./auth.validation');
 
 const accessTTL = '15m';
 
-exports.register = async (prisma, { email, password, name }) => {
+exports.register = async (prisma, body) => {
+  const { email, password, name } = validateRegister(body);
   const existing = await userRepo.findByEmail(prisma, email);
   if (existing) throw new AppError('Email already in use', 409);
 
@@ -18,7 +20,8 @@ exports.register = async (prisma, { email, password, name }) => {
   return { user };
 };
 
-exports.login = async (prisma, { email, password }) => {
+exports.login = async (prisma, body) => {
+  const { email, password } = validateLogin(body);
   const user = await userRepo.findByEmail(prisma, email);
   if (!user || !user.passwordHash)
     throw new AppError('Invalid credentials', 401);

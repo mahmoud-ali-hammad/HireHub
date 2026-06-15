@@ -8,6 +8,201 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id           String           @id @default(cuid())
+  email        String           @unique
+  avatarUrl    String?
+  createdAt    DateTime         @default(now())
+  headline     String?
+  isActive     Boolean          @default(true)
+  location     String?
+  name         String
+  passwordHash String?
+  updatedAt    DateTime         @updatedAt
+  accounts     AuthAccount[]
+  comments     Comment[]
+  connections  Connection[]     @relation("UserConnections")
+  requests     Connection[]     @relation("UserRequests")
+  applications JobApplication[]
+  likes        Like[]
+  messagesRecv Message[]        @relation("MessagesRecv")
+  messagesSent Message[]        @relation("MessagesSent")
+  posts        Post[]
+  profile      Profile?
+}
+
+model AuthAccount {
+  id         String       @id @default(cuid())
+  provider   AuthProvider
+  providerId String
+  userId     String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+}
+
+model Profile {
+  id          String           @id @default(cuid())
+  userId      String           @unique
+  about       String?
+  website     String?
+  bannerUrl   String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  educations  Education[]
+  experiences Experience[]
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills      SkillOnProfile[]
+}
+
+model Company {
+  id        String    @id @default(cuid())
+  name      String
+  handle    String    @unique
+  website   String?
+  logoUrl   String?
+  industry  String?
+  size      String?
+  location  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  jobs      JobPost[]
+}
+
+model JobPost {
+  id           String           @id @default(cuid())
+  title        String
+  description  String
+  employment   EmploymentType
+  jobType      JobType
+  seniority    SeniorityLevel
+  location     String?
+  companyId    String
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  applications JobApplication[]
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model JobApplication {
+  id          String            @id @default(cuid())
+  userId      String
+  jobId       String
+  status      ApplicationStatus @default(APPLIED)
+  resumeUrl   String?
+  coverLetter String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  job         JobPost           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+}
+
+model Connection {
+  id          String           @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      ConnectionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  addressee   User             @relation("UserConnections", fields: [addresseeId], references: [id], onDelete: Cascade)
+  requester   User             @relation("UserRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+}
+
+model Post {
+  id         String         @id @default(cuid())
+  authorId   String
+  content    String
+  visibility PostVisibility @default(PUBLIC)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  comments   Comment[]
+  likes      Like[]
+  author     User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  body       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  receiver   User     @relation("MessagesRecv", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User     @relation("MessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model Skill {
+  id       String           @id @default(cuid())
+  name     String           @unique
+  profiles SkillOnProfile[]
+}
+
+model SkillOnProfile {
+  id        String  @id @default(cuid())
+  profileId String
+  skillId   String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  skill     Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, skillId])
+}
+
+model Experience {
+  id          String         @id @default(cuid())
+  profileId   String
+  title       String
+  companyName String
+  employment  EmploymentType
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+  description String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  profile     Profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Education {
+  id           String    @id @default(cuid())
+  profileId    String
+  schoolName   String
+  degree       String?
+  fieldOfStudy String?
+  startDate    DateTime
+  endDate      DateTime?
+  description  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  profile      Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
 
 enum AuthProvider {
   EMAIL
@@ -64,219 +259,4 @@ enum PostVisibility {
   PUBLIC
   CONNECTIONS
   PRIVATE
-}
-
-model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  passwordHash String?
-  name         String
-  headline     String?
-  location     String?
-  avatarUrl    String?
-  isActive     Boolean       @default(true)
-
-  profile      Profile?
-  accounts     AuthAccount[]
-  posts        Post[]
-  comments     Comment[]
-  likes        Like[]
-  connections  Connection[]  @relation("UserConnections")
-  requests     Connection[]  @relation("UserRequests")
-
-  applications JobApplication[]
-  messagesSent Message[]     @relation("MessagesSent")
-  messagesRecv Message[]     @relation("MessagesRecv")
-
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-}
-
-model AuthAccount {
-  id           String       @id @default(cuid())
-  provider     AuthProvider
-  providerId   String
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       String
-
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  @@unique([provider, providerId])
-}
-
-model Profile {
-  id          String      @id @default(cuid())
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String      @unique
-  about       String?
-  website     String?
-  bannerUrl   String?
-
-  experiences Experience[]
-  educations  Education[]
-  skills      SkillOnProfile[]
-
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-}
-
-model Company {
-  id          String     @id @default(cuid())
-  name        String
-  handle      String     @unique
-  website     String?
-  logoUrl     String?
-  industry    String?
-  size        String?
-  location    String?
-
-  jobs        JobPost[]
-
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-}
-
-model JobPost {
-  id            String           @id @default(cuid())
-  title         String
-  description   String
-  employment    EmploymentType
-  jobType       JobType
-  seniority     SeniorityLevel
-  location      String?
-  company       Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId     String
-
-  applications  JobApplication[]
-
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-}
-
-model JobApplication {
-  id          String             @id @default(cuid())
-  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  job         JobPost            @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  jobId       String
-  status      ApplicationStatus  @default(APPLIED)
-  resumeUrl   String?
-  coverLetter String?
-
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-
-  @@unique([userId, jobId])
-}
-
-model Connection {
-  id           String            @id @default(cuid())
-  requester    User              @relation("UserRequests", fields: [requesterId], references: [id], onDelete: Cascade)
-  requesterId  String
-  addressee    User              @relation("UserConnections", fields: [addresseeId], references: [id], onDelete: Cascade)
-  addresseeId  String
-  status       ConnectionStatus  @default(PENDING)
-
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-
-  @@unique([requesterId, addresseeId])
-}
-
-model Post {
-  id          String         @id @default(cuid())
-  author      User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId    String
-  content     String
-  visibility  PostVisibility @default(PUBLIC)
-
-  comments    Comment[]
-  likes       Like[]
-
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-}
-
-model Comment {
-  id        String   @id @default(cuid())
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId    String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId  String
-  content   String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Like {
-  id        String   @id @default(cuid())
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-
-  createdAt DateTime @default(now())
-
-  @@unique([postId, userId])
-}
-
-model Message {
-  id         String   @id @default(cuid())
-  sender     User     @relation("MessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
-  senderId   String
-  receiver   User     @relation("MessagesRecv", fields: [receiverId], references: [id], onDelete: Cascade)
-  receiverId String
-  body       String
-
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model Skill {
-  id        String           @id @default(cuid())
-  name      String           @unique
-  profiles  SkillOnProfile[]
-}
-
-model SkillOnProfile {
-  id         String   @id @default(cuid())
-  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  profileId  String
-  skill      Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  skillId    String
-
-  @@unique([profileId, skillId])
-}
-
-model Experience {
-  id            String          @id @default(cuid())
-  profile       Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  profileId     String
-  title         String
-  companyName   String
-  employment    EmploymentType
-  location      String?
-  startDate     DateTime
-  endDate       DateTime?
-  description   String?
-
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-}
-
-model Education {
-  id            String   @id @default(cuid())
-  profile       Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  profileId     String
-  schoolName    String
-  degree        String?
-  fieldOfStudy  String?
-  startDate     DateTime
-  endDate       DateTime?
-  description   String?
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
 }
